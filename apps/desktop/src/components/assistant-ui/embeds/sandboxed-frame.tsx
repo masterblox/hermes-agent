@@ -1,0 +1,122 @@
+'use client'
+
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
+
+import { EmbedFail } from './fail'
+import { ScrollGate } from './scroll-gate'
+
+interface Webview extends HTMLElement {
+  executeJavaScript?: (code: string) => Promise<unknown>
+  insertCSS?: (css: string) => Promise<string>
+}
+
+const MIN_AUTO_HEIGHT = 80
+const MAX_AUTO_HEIGHT = 800
+const MEASURE_DELAYS_MS = [0, 300, 800, 1500, 2800]
+
+const HIDE_SCROLLBARS =
+  '::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}html,body{scrollbar-width:none!important}'
+
+interface SandboxedFrameProps {
+  aspectRatio?: number
+  autoHeight?: boolean
+  fixedHeight?: number
+  gateScroll?: boolean
+  initialHeight?: number
+  label: string
+  src: string
+}
+
+export function SandboxedFrame({
+  aspectRatio,
+  autoHeight,
+  fixedHeight,
+  gateScroll,
+  initialHeight = 320,
+  label,
+  src
+}: SandboxedFrameProps) {
+  const hostRef = useRef<HTMLDivElement | null>(null)
+  const [failed, setFailed] = useState(false)
+  const [autoH, setAutoH] = useState(initialHeight)
+
+  useEffect(() => {
+    const host = hostRef.current
+
+    if (!host) {
+      return
+    }
+
+    let cancelled = false
+    const timers: number[] = []
+
+    setFailed(false)
+    host.replaceChildren()
+
+    const webview = document.createElement('webview') as Webview
+    webview.className = 'h-full w-full bg-transparent'
+    webview.setAttribute('partition', 'persist:hermes-embed')
+    webview.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes')
+    webview.setAttribute('src', src)
+
+    const measure = () => {
+      if (!autoHeight || cancelled || !webview.executeJavaScript) {
+        return
+      }
+
+      webview
+        .executeJavaScript('document.documentElement.scrollHeight')
+        .then(value => {
+          if (!cancelled && typeof value === 'number' && value > 0) {
+            setAutoH(Math.min(Math.max(value, MIN_AUTO_HEIGHT), MAX_AUTO_HEIGHT))
+          }
+        })
+        .catch(() => {})
+    }
+
+    const onStop = () => {
+      webview.insertCSS?.(HIDE_SCROLLBARS).catch(() => {})
+
+      for (const delay of MEASURE_DELAYS_MS) {
+        timers.push(window.setTimeout(measure, delay))
+      }
+    }
+
+    const onFail = (event: Event) => {
+      if ((event as Event & { errorCode?: number }).errorCode === -3) {
+        return
+      }
+
+      setFailed(true)
+    }
+
+    webview.addEventListener('did-stop-loading', onStop)
+    webview.addEventListener('did-fail-load', onFail)
+    host.appendChild(webview)
+
+    return () => {
+      cancelled = true
+
+      for (const timer of timers) {
+        clearTimeout(timer)
+      }
+
+      webview.removeEventListener('did-stop-loading', onStop)
+      webview.removeEventListener('did-fail-load', onFail)
+      webview.remove()
+    }
+  }, [autoHeight, src])
+
+  if (failed) {
+    return <EmbedFail label={label} />
+  }
+
+  const style: CSSProperties = aspectRatio ? { aspectRatio } : { height: autoHeight ? autoH : fixedHeight }
+
+  return (
+    <div className="relative w-full overflow-hidden" style={style}>
+      <div className="size-full" ref={hostRef} />
+      {gateScroll && <ScrollGate />}
+    </div>
+  )
+}
