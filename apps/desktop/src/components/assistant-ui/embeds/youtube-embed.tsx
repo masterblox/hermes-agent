@@ -1,11 +1,8 @@
 'use client'
 
-import { type CSSProperties, useMemo } from 'react'
+import { useMemo } from 'react'
 
-import { EMBED_MAX_H } from './embed-size'
 import type { FrameEmbed } from './providers/types'
-
-const FRAME_STYLE: CSSProperties = { aspectRatio: 16 / 9, maxHeight: EMBED_MAX_H }
 
 const YOUTUBE_ALLOW =
   'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen'
@@ -31,20 +28,17 @@ function youtubeSrc(embedUrl: string): string {
 export default function YouTubeEmbedRenderer({ descriptor }: { descriptor: FrameEmbed }) {
   const src = useMemo(() => youtubeSrc(descriptor.embedUrl), [descriptor.embedUrl])
 
-  // Box owns the ratio + height cap; the iframe fills it and the player
-  // letterboxes itself rather than clipping when the cap bites.
+  // Width is capped to the ratio by UrlEmbed, so aspect-video sizes height ≤ cap.
   return (
-    <span className="block w-full" style={FRAME_STYLE}>
-      <iframe
-        allow={YOUTUBE_ALLOW}
-        allowFullScreen
-        className="size-full border-0 bg-transparent"
-        loading="lazy"
-        referrerPolicy="strict-origin-when-cross-origin"
-        scrolling="no"
-        src={src}
-        title="YouTube embed"
-      />
-    </span>
+    <iframe
+      allow={YOUTUBE_ALLOW}
+      allowFullScreen
+      className="block aspect-video w-full border-0 bg-transparent"
+      loading="lazy"
+      referrerPolicy="strict-origin-when-cross-origin"
+      scrolling="no"
+      src={src}
+      title="YouTube embed"
+    />
   )
 }

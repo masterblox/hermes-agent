@@ -37,11 +37,16 @@ function LazyRenderer({ descriptor }: { descriptor: EmbedDescriptor }) {
 }
 
 export function UrlEmbed({ descriptor }: { descriptor: EmbedDescriptor }) {
+  const aspect = descriptor.aspectRatio
+
+  // Ratio embeds cap their WIDTH off the ratio so height tops out at EMBED_MAX_H
+  // while scaling naturally — no letterbox. Fixed/measured embeds cap height.
   const style: CSSProperties = {
     containIntrinsicSize: `auto ${intrinsicHeight(descriptor)}px`,
     contentVisibility: 'auto',
-    maxHeight: EMBED_MAX_H,
-    width: descriptor.maxWidth ? `min(${descriptor.maxWidth}px, 100%)` : '100%'
+    ...(aspect
+      ? { width: `min(${descriptor.maxWidth ?? 640}px, 100%, calc(${EMBED_MAX_H} * ${aspect}))` }
+      : { maxHeight: EMBED_MAX_H, width: descriptor.maxWidth ? `min(${descriptor.maxWidth}px, 100%)` : '100%' })
   }
 
   return (

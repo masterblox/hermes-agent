@@ -1,13 +1,13 @@
 import { bareHost, type EmbedMatcher } from './types'
 
-// Canonical embed heights per content type (Spotify's own iframe sizes). The
-// embed is cross-origin and unmeasurable, so these are fixed — compact player
-// for single items, full player for collections.
+// Spotify's embed is cross-origin and unmeasurable, so heights are fixed. The
+// compact (152) player covers single items; collections get a short scrollable
+// list (232) rather than the full 352 chrome, which left too much dead space.
 const TYPE_HEIGHT: Record<string, number> = {
-  album: 352,
-  artist: 352,
+  album: 232,
+  artist: 232,
   episode: 152,
-  playlist: 352,
+  playlist: 232,
   show: 232,
   track: 152
 }

@@ -112,8 +112,10 @@ export function SandboxedFrame({
     return <EmbedFail label={label} />
   }
 
+  // Ratio frames are width-capped by UrlEmbed (height follows the ratio);
+  // fixed/measured frames cap height directly.
   const style: CSSProperties = aspectRatio
-    ? { aspectRatio, maxHeight: EMBED_MAX_H }
+    ? { aspectRatio }
     : { height: autoHeight ? autoH : fixedHeight, maxHeight: EMBED_MAX_H }
 
   return (
