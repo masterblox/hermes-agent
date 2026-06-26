@@ -2,12 +2,12 @@
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 
+import { EMBED_MAX_H } from './embed-size'
 import { escapeHtml } from './escape-html'
 import { EmbedFail } from './fail'
 import type { FrameEmbed } from './providers/types'
 
 const MIN_HEIGHT = 320
-const MAX_HEIGHT = 760
 
 function instagramSrcDoc(permalink: string): string {
   const safePermalink = escapeHtml(permalink)
@@ -29,7 +29,7 @@ export default function InstagramEmbedRenderer({ descriptor }: { descriptor: Fra
         event.data?.type === 'hermes-instagram-height' &&
         typeof event.data.height === 'number'
       ) {
-        setHeight(Math.min(Math.max(event.data.height, MIN_HEIGHT), MAX_HEIGHT))
+        setHeight(Math.max(event.data.height, MIN_HEIGHT))
       }
     }
 
@@ -42,7 +42,7 @@ export default function InstagramEmbedRenderer({ descriptor }: { descriptor: Fra
     return <EmbedFail label={descriptor.label} />
   }
 
-  const style: CSSProperties = { height }
+  const style: CSSProperties = { height, maxHeight: EMBED_MAX_H }
 
   return (
     <iframe

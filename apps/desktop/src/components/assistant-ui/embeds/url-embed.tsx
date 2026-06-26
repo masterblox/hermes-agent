@@ -2,6 +2,7 @@
 
 import { type CSSProperties, lazy, Suspense } from 'react'
 
+import { EMBED_MAX_H } from './embed-size'
 import { EmbedFail } from './fail'
 import type { EmbedDescriptor } from './providers/types'
 import { RichBoundary } from './rich-boundary'
@@ -39,6 +40,7 @@ export function UrlEmbed({ descriptor }: { descriptor: EmbedDescriptor }) {
   const style: CSSProperties = {
     containIntrinsicSize: `auto ${intrinsicHeight(descriptor)}px`,
     contentVisibility: 'auto',
+    maxHeight: EMBED_MAX_H,
     width: descriptor.maxWidth ? `min(${descriptor.maxWidth}px, 100%)` : '100%'
   }
 

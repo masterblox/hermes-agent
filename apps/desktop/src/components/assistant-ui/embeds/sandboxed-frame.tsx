@@ -2,6 +2,7 @@
 
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
 
+import { EMBED_MAX_H, EMBED_MIN_AUTO_H } from './embed-size'
 import { EmbedFail } from './fail'
 import { ScrollGate } from './scroll-gate'
 
@@ -10,8 +11,6 @@ interface Webview extends HTMLElement {
   insertCSS?: (css: string) => Promise<string>
 }
 
-const MIN_AUTO_HEIGHT = 80
-const MAX_AUTO_HEIGHT = 800
 const MEASURE_DELAYS_MS = [0, 300, 800, 1500, 2800]
 
 const HIDE_SCROLLBARS =
@@ -20,6 +19,7 @@ const HIDE_SCROLLBARS =
 interface SandboxedFrameProps {
   aspectRatio?: number
   autoHeight?: boolean
+  /** Canonical height for providers whose embed can't be measured (Spotify). */
   fixedHeight?: number
   gateScroll?: boolean
   initialHeight?: number
@@ -67,8 +67,9 @@ export function SandboxedFrame({
       webview
         .executeJavaScript('document.documentElement.scrollHeight')
         .then(value => {
+          // Grow to content; CSS max-height (EMBED_MAX_H) caps the top.
           if (!cancelled && typeof value === 'number' && value > 0) {
-            setAutoH(Math.min(Math.max(value, MIN_AUTO_HEIGHT), MAX_AUTO_HEIGHT))
+            setAutoH(Math.max(value, EMBED_MIN_AUTO_H))
           }
         })
         .catch(() => {})
@@ -111,7 +112,9 @@ export function SandboxedFrame({
     return <EmbedFail label={label} />
   }
 
-  const style: CSSProperties = aspectRatio ? { aspectRatio } : { height: autoHeight ? autoH : fixedHeight }
+  const style: CSSProperties = aspectRatio
+    ? { aspectRatio, maxHeight: EMBED_MAX_H }
+    : { height: autoHeight ? autoH : fixedHeight, maxHeight: EMBED_MAX_H }
 
   return (
     <div className="relative w-full overflow-hidden" style={style}>
